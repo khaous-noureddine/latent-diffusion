@@ -32,6 +32,12 @@ class SelfAttention(nn.Module):
         # (batch_size, n_heads, seq_len, dv) @ (batch_size, n_heads, dv, seq_len) -> (batch_size, n_heads, seq_len, seq_len)
         attention = q @ k.transpose(-1, -2)
         attention /= torch.sqrt(self.dv)
+        
+        if causal_mask:
+            # (batch_size, n_heads, seq_len, seq_len) -> (batch_size, n_heads, seq_len, seq_len)
+            mask = torch.ones_like(attention, dtype=torch.bool).triu(1)
+            attention.masked_fill_(mask, -torch.inf)
+            
         attention = F.softmax(attention, dim=-1)
         # (batch_size, n_heads, seq_len, seq_len) @ (batch_size, n_heads, seq_len, dv) -> (batch_size, n_heads, seq_len, dv)
         attention = attention @ v
